@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Arix Keygen</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+</head>
+<body>
+    <h2>Arix Keygen (Web Version)</h2>
+    <input type="text" id="inputText" placeholder="Masukkan teks">
+    <button onclick="generateSerial()">Generate Serial</button>
+    <br><br>
+    <textarea id="serialOutput" rows="4" cols="60" readonly></textarea><br>
+    <button onclick="copySerial()">Copy Serial</button>
+    <button onclick="saveSerial()">Save Serial</button>
+    <hr>
+    <h3>Validasi Serial</h3>
+    <input type="text" id="validateText" placeholder="Masukkan teks">
+    <br><br>
+    <textarea id="validateSerial" rows="4" cols="60" placeholder="Masukkan serial"></textarea><br>
+    <button onclick="validate()">Validasi</button>
+
+    <script>
+        function getBytes(text, length) {
+            let bytes = CryptoJS.enc.Utf8.parse(text);
+            let words = bytes.words.slice(0, length / 4);
+            while (words.length < length / 4) {
+                words.push(0);
+            }
+            return CryptoJS.lib.WordArray.create(words, length);
+        }
+
+        const aesKey = getBytes('ArixSecureKey1234', 16);
+        const aesIV = getBytes('ArixSecureIV1234', 16);
+
+        function sha256(text) {
+            return CryptoJS.SHA256(text).toString(CryptoJS.enc.Hex).toUpperCase();
+        }
+
+        function encryptAES(plainText) {
+            let encrypted = CryptoJS.AES.encrypt(
+                CryptoJS.enc.Utf8.parse(plainText),
+                aesKey,
+                {
+                    iv: aesIV,
+                    mode: CryptoJS.mode.CBC,
+                    padding: CryptoJS.pad.Pkcs7
+                }
+            );
+            return encrypted.toString(); // Base64
+        }
+
+        function decryptAES(cipherText) {
+            let decrypted = CryptoJS.AES.decrypt(
+                cipherText,
+                aesKey,
+                {
+                    iv: aesIV,
+                    mode: CryptoJS.mode.CBC,
+                    padding: CryptoJS.pad.Pkcs7
+                }
+            );
+            return decrypted.toString(CryptoJS.enc.Utf8);
+        }
+
+        function generateSerial() {
+            let input = document.getElementById('inputText').value.trim();
+            if (!input) {
+                alert('Masukkan teks terlebih dahulu!');
+                return;
+            }
+            let hashed = sha256(input);
+            let serial = encryptAES(hashed);
+            document.getElementById('serialOutput').value = serial;
+        }
+
+        function copySerial() {
+            let serial = document.getElementById('serialOutput');
+            serial.select();
+            document.execCommand('copy');
+            alert('Serial disalin ke clipboard');
+        }
+
+        function saveSerial() {
+            let serial = document.getElementById('serialOutput').value;
+            if (!serial) {
+                alert('Serial kosong!');
+                return;
+            }
+            let blob = new Blob([serial], { type: "text/plain;charset=utf-8" });
+            let link = document.createElement("a");
+            link.href = URL.createObjectURL(blob);
+            link.download = "serial.ky";
+            link.click();
+        }
+
+        function validate() {
+            let input = document.getElementById('validateText').value.trim();
+            let serial = document.getElementById('validateSerial').value.trim();
+            if (!input || !serial) {
+                alert('Isi kedua kolom terlebih dahulu!');
+                return;
+            }
+            try {
+                let hashed = sha256(input);
+                let decrypted = decryptAES(serial);
+                if (hashed === decrypted) {
+                    alert('Serial Valid!');
+                } else {
+                    alert('Serial Tidak Valid!');
+                }
+            } catch (e) {
+                alert('Serial Tidak Valid atau Rusak!\n' + e);
+            }
+        }
+    </script>
+</body>
+</html>
